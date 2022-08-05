@@ -22,7 +22,7 @@ start = DummyOperator(task_id='start', dag=dag)
 
 passing = KubernetesPodOperator(namespace='airflow',
                           image="meltano-project:dev",
-                          cmds=["meltano elt tap-spreadsheets-anywhere", "target-postgres", "--transform=skip"],
+                          cmds=["elt tap-spreadsheets-anywhere", "target-postgres", "--transform=skip"],
                           #arguments=[""],
                           env_vars={"TARGET_POSTGRES_PASSWORD":"mysecretpassword"},
                           name="spreadsheets-to-postgres",
