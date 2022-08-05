@@ -27,6 +27,7 @@ passing = KubernetesPodOperator(namespace='airflow',
                           name="spreadsheets-to-postgres",
                           task_id="spreadsheets-to-postgres-task",
                           get_logs=True,
+                          hostnetwork=True,
                           dag=dag
                           )
 
