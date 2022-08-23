@@ -45,7 +45,7 @@ dag = DAG(
 
 start = DummyOperator(task_id='start', dag=dag)
 
-passing = KubernetesPodOperator(namespace='airflow',
+extract_load = KubernetesPodOperator(namespace='airflow',
                           image="meltano-project:dev",
                           arguments=["elt", "tap-spreadsheets-anywhere", "target-postgres", "--transform=skip"],
                           # env_vars={"TARGET_POSTGRES_PASSWORD":"mysecretadminpassword"},
@@ -57,9 +57,17 @@ passing = KubernetesPodOperator(namespace='airflow',
                           dag=dag
                           )
 
+transform = KubernetesPodOperator(namespace='airflow',
+                          image="dbt-project:dev",
+                          arguments=["build"],
+                          secrets=[secret_postgres_password_env, secret_postgres_host_env],
+                          name="transform-postgres",
+                          task_id="transform-postgres-task",
+                          get_logs=True,
+                          hostnetwork=True,
+                          dag=dag
+                          )
 
 end = DummyOperator(task_id='end', dag=dag)
 
-
-passing.set_upstream(start)
-passing.set_downstream(end)
+start > extract_load > transform
