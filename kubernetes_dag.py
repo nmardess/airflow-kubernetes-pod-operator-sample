@@ -70,4 +70,4 @@ transform = KubernetesPodOperator(namespace='airflow',
 
 end = DummyOperator(task_id='end', dag=dag)
 
-start > extract_load > transform
+start > extract_load > transform > end
