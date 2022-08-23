@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.operators.dummy_operator import DummyOperator
 
-secret_env = Secret(
+secret_postgres_password_env = Secret(
     # Expose the secret as environment variable.
     deploy_type='env',
     # The name of the environment variable, since deploy_type is `env` rather
@@ -13,7 +13,20 @@ secret_env = Secret(
     # Name of the Kubernetes Secret
     secret='postgresql-dev',
     # Key of a secret stored in this Secret object
-    key='postgres-password')
+    key='postgres-password'
+)
+
+secret_postgres_host_env = Secret(
+    # Expose the secret as environment variable.
+    deploy_type='env',
+    # The name of the environment variable, since deploy_type is `env` rather
+    # than `volume`.
+    deploy_target='TARGET_POSTGRES_HOST',
+    # Name of the Kubernetes Secret
+    secret='postgresql-dev-host',
+    # Key of a secret stored in this Secret object
+    key='host'
+)
 
 default_args = {
     'owner': 'airflow',
@@ -36,7 +49,7 @@ passing = KubernetesPodOperator(namespace='airflow',
                           image="meltano-project:dev",
                           arguments=["elt", "tap-spreadsheets-anywhere", "target-postgres", "--transform=skip"],
                           # env_vars={"TARGET_POSTGRES_PASSWORD":"mysecretadminpassword"},
-                          secrets=[secret_env],
+                          secrets=[secret_postgres_password_env, secret_postgres_host_env],
                           name="spreadsheets-to-postgres",
                           task_id="spreadsheets-to-postgres-task",
                           get_logs=True,
