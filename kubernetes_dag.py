@@ -102,4 +102,4 @@ dbt__generate_docs = KubernetesPodOperator(namespace='airflow',
 
 end = DummyOperator(task_id='end', dag=dag)
 
-start >> meltano__extract_load >> dbt__run_staging >> dbt__run_marts >> end
+start >> meltano__extract_load >> dbt__run_staging >> dbt__run_marts >> dbt__generate_docs >> end
