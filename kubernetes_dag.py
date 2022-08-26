@@ -89,7 +89,7 @@ dbt__run_marts = KubernetesPodOperator(namespace='airflow',
 
 dbt__generate_docs = KubernetesPodOperator(namespace='airflow',
                           image="dbt-project:dev",
-                          arguments=["docs ", "generate"],
+                          arguments=["docs", "generate"],
                           #secrets=[secret_postgres_password_env, secret_postgres_host_env],
                           name="dbt__generate_docs",
                           task_id="dbt__generate_docs-task",
