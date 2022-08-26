@@ -1,5 +1,6 @@
 from airflow import DAG
 from airflow.kubernetes.secret import Secret
+from kubernetes.client import models as k8s
 from datetime import datetime, timedelta
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.operators.dummy_operator import DummyOperator
@@ -26,6 +27,15 @@ secret_postgres_host_env = Secret(
     secret='postgresql-dev-host',
     # Key of a secret stored in this Secret object
     key='host'
+)
+
+volume_mount_dbt_docs = k8s.V1VolumeMount(
+    name='dbt-docs', mount_path='/dbt/docs', sub_path=None, read_only=True
+)
+
+volume_dbt_docs = k8s.V1Volume(
+    name='dbt-docs',
+    persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='dbt-docs-claim'),
 )
 
 default_args = {
@@ -83,8 +93,8 @@ dbt__generate_docs = KubernetesPodOperator(namespace='airflow',
                           #secrets=[secret_postgres_password_env, secret_postgres_host_env],
                           name="dbt__generate_docs",
                           task_id="dbt__generate_docs-task",
-                          volume_mounts=["tmp/docs"],
-                          volumes=["/dbt/docs"],
+                          volume_mounts=[volume_mount_dbt_docs],
+                          volumes=[volume_dbt_docs],
                           get_logs=True,
                           #hostnetwork=True,
                           dag=dag
