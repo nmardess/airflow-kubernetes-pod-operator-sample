@@ -39,35 +39,57 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
-dag = DAG(
-    'kubernetes_spreadsheets_to_postgres', default_args=default_args, schedule_interval=timedelta(days=1))
+dag = DAG( 'kubernetes_analytics', default_args=default_args) #, schedule_interval=timedelta(days=1))
 
 
 start = DummyOperator(task_id='start', dag=dag)
 
-extract_load = KubernetesPodOperator(namespace='airflow',
+meltano__extract_load = KubernetesPodOperator(namespace='airflow',
                           image="meltano-project:dev",
                           arguments=["elt", "tap-spreadsheets-anywhere", "target-postgres", "--transform=skip"],
-                          # env_vars={"TARGET_POSTGRES_PASSWORD":"mysecretadminpassword"},
                           secrets=[secret_postgres_password_env, secret_postgres_host_env],
-                          name="spreadsheets-to-postgres",
-                          task_id="spreadsheets-to-postgres-task",
+                          name="meltano__extract_load",
+                          task_id="meltano__extract_load-task",
                           get_logs=True,
-                          hostnetwork=True,
+                          #hostnetwork=True,
                           dag=dag
                           )
 
-transform = KubernetesPodOperator(namespace='airflow',
+dbt__run_staging = KubernetesPodOperator(namespace='airflow',
                           image="dbt-project:dev",
-                          arguments=["build"],
+                          arguments=["run", "--select", "staging"],
                           secrets=[secret_postgres_password_env, secret_postgres_host_env],
-                          name="transform-postgres",
-                          task_id="transform-postgres-task",
+                          name="dbt__run_staging",
+                          task_id="dbt__run_staging-task",
                           get_logs=True,
-                          hostnetwork=True,
+                          #hostnetwork=True,
+                          dag=dag
+                          )
+
+dbt__run_marts = KubernetesPodOperator(namespace='airflow',
+                          image="dbt-project:dev",
+                          arguments=["run", "--select", "marts"],
+                          secrets=[secret_postgres_password_env, secret_postgres_host_env],
+                          name="dbt__run_marts",
+                          task_id="dbt__run_marts-task",
+                          get_logs=True,
+                          #hostnetwork=True,
+                          dag=dag
+                          )
+
+dbt__generate_docs = KubernetesPodOperator(namespace='airflow',
+                          image="dbt-project:dev",
+                          arguments=["docs ", "generate"],
+                          #secrets=[secret_postgres_password_env, secret_postgres_host_env],
+                          name="dbt__generate_docs",
+                          task_id="dbt__generate_docs-task",
+                          volume_mounts=["tmp/docs"],
+                          volumes=["/dbt/docs"],
+                          get_logs=True,
+                          #hostnetwork=True,
                           dag=dag
                           )
 
 end = DummyOperator(task_id='end', dag=dag)
 
-start >> extract_load >> transform >> end
+start >> meltano__extract_load >> dbt__run_staging >> dbt__run_marts >> end
