@@ -30,7 +30,7 @@ secret_postgres_host_env = Secret(
 )
 
 volume_mount_dbt_target = k8s.V1VolumeMount(
-    name='dbt-target', mount_path='/dbt/target', sub_path=None, read_only=True
+    name='dbt-target', mount_path='/dbt/target', sub_path=None, read_only=False
 )
 
 volume_dbt_target = k8s.V1Volume(
