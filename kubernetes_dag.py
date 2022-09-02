@@ -29,13 +29,13 @@ secret_postgres_host_env = Secret(
     key='host'
 )
 
-volume_mount_dbt_docs = k8s.V1VolumeMount(
-    name='dbt-docs', mount_path='/dbt/docs', sub_path=None, read_only=True
+volume_mount_dbt_target = k8s.V1VolumeMount(
+    name='dbt-target', mount_path='/dbt/target', sub_path=None, read_only=True
 )
 
-volume_dbt_docs = k8s.V1Volume(
-    name='dbt-docs',
-    persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='dbt-docs-claim'),
+volume_dbt_target = k8s.V1Volume(
+    name='dbt-target',
+    persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(claim_name='dbt-target-claim'),
 )
 
 default_args = {
@@ -49,8 +49,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
-dag = DAG( 'kubernetes_analytics', default_args=default_args) #, schedule_interval=timedelta(days=1))
-
+dag = DAG( 'kubernetes_analytics', default_args=default_args) 
 
 start = DummyOperator(task_id='start', dag=dag)
 
@@ -61,7 +60,6 @@ meltano__extract_load = KubernetesPodOperator(namespace='airflow',
                           name="meltano__extract_load",
                           task_id="meltano__extract_load-task",
                           get_logs=True,
-                          #hostnetwork=True,
                           dag=dag
                           )
 
@@ -72,7 +70,6 @@ dbt__run_staging = KubernetesPodOperator(namespace='airflow',
                           name="dbt__run_staging",
                           task_id="dbt__run_staging-task",
                           get_logs=True,
-                          #hostnetwork=True,
                           dag=dag
                           )
 
@@ -83,7 +80,6 @@ dbt__run_marts = KubernetesPodOperator(namespace='airflow',
                           name="dbt__run_marts",
                           task_id="dbt__run_marts-task",
                           get_logs=True,
-                          #hostnetwork=True,
                           dag=dag
                           )
 
@@ -93,10 +89,9 @@ dbt__generate_docs = KubernetesPodOperator(namespace='airflow',
                           secrets=[secret_postgres_password_env, secret_postgres_host_env],
                           name="dbt__generate_docs",
                           task_id="dbt__generate_docs-task",
-                          volume_mounts=[volume_mount_dbt_docs],
-                          volumes=[volume_dbt_docs],
+                          volume_mounts=[volume_mount_dbt_target],
+                          volumes=[volume_dbt_target],
                           get_logs=True,
-                          #hostnetwork=True,
                           dag=dag
                           )
 
